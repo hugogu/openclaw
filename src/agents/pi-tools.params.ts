@@ -216,7 +216,7 @@ function addClaudeParamAliasesToSchema(params: {
     }
     const idx = params.required.indexOf(original);
     if (idx !== -1) {
-      params.required.splice(idx, 1);
+      params.required.splice(idx, 1, alias);
       changed = true;
     }
   }
