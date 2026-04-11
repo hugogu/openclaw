@@ -751,6 +751,7 @@ function registerEventHandlers(
           botOpenId: botOpenIds.get(accountId),
           runtime,
           accountId,
+          enqueue,
         });
         if (fireAndForget) {
           promise.catch((err) => {

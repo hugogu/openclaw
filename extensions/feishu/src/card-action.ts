@@ -133,14 +133,23 @@ async function dispatchSyntheticCommand(params: {
   runtime?: RuntimeEnv;
   accountId?: string;
   chatType?: "p2p" | "group";
+  enqueue?: (chatId: string, task: () => Promise<void>) => Promise<void>;
 }): Promise<void> {
-  await handleFeishuMessage({
+  const chatId = params.event.context.chat_id?.trim() || params.event.operator.open_id;
+  const task = () => handleFeishuMessage({
     cfg: params.cfg,
     event: buildSyntheticMessageEvent(params.event, params.command, params.chatType),
     botOpenId: params.botOpenId,
     runtime: params.runtime,
     accountId: params.accountId,
   });
+  
+  // Use queue if available to ensure ordering with regular messages
+  if (params.enqueue) {
+    await params.enqueue(chatId, task);
+  } else {
+    await task();
+  }
 }
 
 async function sendInvalidInteractionNotice(params: {
@@ -172,6 +181,7 @@ export async function handleFeishuCardAction(params: {
   botOpenId?: string;
   runtime?: RuntimeEnv;
   accountId?: string;
+  enqueue?: (chatId: string, task: () => Promise<void>) => Promise<void>;
 }): Promise<void> {
   const { cfg, event, runtime, accountId } = params;
   const account = resolveFeishuRuntimeAccount({ cfg, accountId });
@@ -273,6 +283,7 @@ export async function handleFeishuCardAction(params: {
           runtime,
           accountId,
           chatType: envelope.c?.t ?? (event.context.chat_id ? "group" : "p2p"),
+          enqueue: params.enqueue,
         });
         completeFeishuCardActionToken({ token: event.token, accountId: account.accountId });
         return;
@@ -301,6 +312,7 @@ export async function handleFeishuCardAction(params: {
       botOpenId: params.botOpenId,
       runtime,
       accountId,
+      enqueue: params.enqueue,
     });
     completeFeishuCardActionToken({ token: event.token, accountId: account.accountId });
   } catch (err) {
